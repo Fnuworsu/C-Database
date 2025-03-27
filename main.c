@@ -1,5 +1,3 @@
-
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -7,8 +5,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <sys/types.h>
+#define ssize_t long
+#define STDIN_FILENO 0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+
+#ifndef _S_IREAD
+#define _S_IREAD 0400
+#endif
+#ifndef _S_IWRITE
+#define _S_IWRITE 0200
+#endif
+
+#define S_IRUSR _S_IREAD
+#define S_IWUSR _S_IWRITE
+#define S_IRUSR _S_IREAD
+#define S_IWUSR _S_IWRITE
+#define open _open
+#define close _close
+#define read _read
+#define write _write
+#define lseek _lseek
+#else
 #include <unistd.h>
 #include <sys/stat.h>
+#endif
 
 //wrote my own custom getline
 ssize_t getline(char **lineptr, size_t *n, FILE *stream) {
@@ -296,8 +321,8 @@ void* get_page(Pager* pager, uint32_t page_num) {
     }
 
     if (page_num <= num_pages) {
-      lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-      ssize_t bytes_read = read(pager->file_descriptor, page, PAGE_SIZE);
+      _lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+      ssize_t bytes_read = _read(pager->file_descriptor, page, PAGE_SIZE);
       if (bytes_read == -1) {
         printf("Error reading file: %d\n", errno);
         exit(EXIT_FAILURE);
@@ -521,11 +546,10 @@ void cursor_advance(Cursor* cursor) {
 }
 
 Pager* pager_open(const char* filename) {
-  int fd = open(filename,
-                O_RDWR |      // Read/Write mode
-                    O_CREAT,  // Create file if it does not exist
-                S_IWUSR |     // User write permission
-                    S_IRUSR   // User read permission
+  int fd = _open(filename,
+                _O_RDWR |      // Read/Write mode
+                    _O_CREAT,  // Create file if it does not exist
+                _S_IREAD | _S_IWRITE   // Read/Write permission
                 );
 
   if (fd == -1) {
@@ -533,7 +557,7 @@ Pager* pager_open(const char* filename) {
     exit(EXIT_FAILURE);
   }
 
-  off_t file_length = lseek(fd, 0, SEEK_END);
+  off_t file_length = _lseek(fd, 0, SEEK_END);
 
   Pager* pager = malloc(sizeof(Pager));
   pager->file_descriptor = fd;
@@ -605,7 +629,7 @@ void pager_flush(Pager* pager, uint32_t page_num) {
     exit(EXIT_FAILURE);
   }
 
-  off_t offset = lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+  off_t offset = _lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
 
   if (offset == -1) {
     printf("Error seeking: %d\n", errno);
@@ -613,7 +637,7 @@ void pager_flush(Pager* pager, uint32_t page_num) {
   }
 
   ssize_t bytes_written =
-      write(pager->file_descriptor, pager->pages[page_num], PAGE_SIZE);
+      _write(pager->file_descriptor, pager->pages[page_num], PAGE_SIZE);
 
   if (bytes_written == -1) {
     printf("Error writing: %d\n", errno);
@@ -633,7 +657,7 @@ void db_close(Table* table) {
     pager->pages[i] = NULL;
   }
 
-  int result = close(pager->file_descriptor);
+  int result = _close(pager->file_descriptor);
   if (result == -1) {
     printf("Error closing db file.\n");
     exit(EXIT_FAILURE);
