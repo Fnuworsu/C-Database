@@ -230,6 +230,12 @@ select
 
 -- Exit the program
 .exit
+
+-- Display B-tree
+.btree
+
+-- Show constants(Details of nodes in B-tree)
+.constants
 ```
 
 ## Development Status
