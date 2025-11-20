@@ -1,7 +1,0 @@
-# depslib dependency file v1.0
-1737599192 source:c:\felix\c\intro to c\c db\c db\main.c
-	<stdio.h>
-	<stdlib.h>
-	<stdbool.h>
-	<string.h>
-
