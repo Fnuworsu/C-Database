@@ -217,7 +217,7 @@ cd c-db
 
 # Build and run the project
 gcc -o db_program main.c
-.\db_program.exe file_name.db
+./db_program file_name.db
 ```
 
 ### Basic Commands
